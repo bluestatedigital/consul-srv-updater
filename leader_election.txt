@@ -1,0 +1,32 @@
+consul leader election
+
+create session
+    PUT /v1/session/create 
+    
+    {
+        "LockDelay": "15s",
+        "Name": "human-readable-session-name",
+        "Checks": ["a", "b", "c"]
+    }
+    
+    
+    ## works
+    curl -X PUT -d {} localhost:8500/v1/session/create
+    => {"ID":"1dfd4217-e081-39f9-d102-5943e2eea268"}
+
+lock the key
+    PUT /v1/kv/key?acquire=session
+    
+    curl -X PUT -d 'meh, whatever' http://localhost:8500/v1/kv/key?acquire=1dfd4217-e081-39f9-d102-5943e2eea268
+    => true
+
+
+
+if not have session or if session is not valid
+    create session
+
+if locked key successfully or key .Session == our session id
+    do stuff
+else
+    someone else has the lock
+    
