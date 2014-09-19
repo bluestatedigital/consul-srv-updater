@@ -1,8 +1,6 @@
 package main
 
 import (
-    // "github.com/mitchellh/goamz/route53"
-    
     "os"
     "fmt"
     "log"
@@ -11,7 +9,7 @@ import (
     "github.com/armon/consul-api"
 )
 
-type SrvUpdater struct {
+type LockWrapper struct {
     consul  *consulapi.Client
     sessionPath string
     
@@ -19,14 +17,14 @@ type SrvUpdater struct {
     keyPath     string
 }
 
-func NewSrvUpdater(consul *consulapi.Client, dataDir string) (*SrvUpdater) {
+func NewLockWrapper(consul *consulapi.Client, dataDir string) (*LockWrapper) {
     agentInfo, err := consul.Agent().Self()
     
     if err != nil {
         log.Fatal("can't get agent info ", err)
     }
 
-    updater := &SrvUpdater{
+    updater := &LockWrapper{
         consul:      consul,
         sessionPath: filepath.Join(dataDir, "session.json"),
         keyPath:     fmt.Sprintf("consul.io/srv_recorder/%s/leader", agentInfo["Config"]["Datacenter"]),
@@ -36,7 +34,7 @@ func NewSrvUpdater(consul *consulapi.Client, dataDir string) (*SrvUpdater) {
 }
 
 // creates a new session
-func (self *SrvUpdater) createSession() {
+func (self *LockWrapper) createSession() {
     sessionId, _, err := self.consul.Session().Create(
         &consulapi.SessionEntry{
             Name: "consul-srv-updater",
@@ -64,7 +62,7 @@ func (self *SrvUpdater) createSession() {
 }
 
 // destroys an existing session, and also removes the session file
-func (self *SrvUpdater) destroySession() {
+func (self *LockWrapper) destroySession() {
     self.consul.Session().Destroy(self.session.ID, nil)
     
     err := os.Remove(self.sessionPath)
@@ -76,7 +74,7 @@ func (self *SrvUpdater) destroySession() {
 }
 
 // stores session to file, returning an error if unable
-func (self *SrvUpdater) storeSession() error {
+func (self *LockWrapper) storeSession() error {
     ofp, err := os.OpenFile(self.sessionPath, os.O_WRONLY | os.O_TRUNC | os.O_CREATE, 0600)
     
     if err != nil {
@@ -91,7 +89,7 @@ func (self *SrvUpdater) storeSession() error {
 }
 
 // loads the session from the file, if it exists
-func (self *SrvUpdater) loadSession() bool {
+func (self *LockWrapper) loadSession() bool {
     if _, err := os.Stat(self.sessionPath); err == nil {
         // file exists; deserialize
         ifp, err := os.Open(self.sessionPath)
@@ -116,7 +114,7 @@ func (self *SrvUpdater) loadSession() bool {
 }
 
 // tests that the session is valid
-func (self *SrvUpdater) isSessionValid() bool {
+func (self *LockWrapper) isSessionValid() bool {
     // validate session; returns nil if session is invalid
     session, _, err := self.consul.Session().Info(self.session.ID, nil)
 
@@ -127,7 +125,7 @@ func (self *SrvUpdater) isSessionValid() bool {
     return session != nil
 }
 
-func (self *SrvUpdater) haveLock() bool {
+func (self *LockWrapper) haveLock() bool {
     kvp, _, err := self.consul.KV().Get(self.keyPath, nil)
     
     if err != nil {
@@ -137,7 +135,7 @@ func (self *SrvUpdater) haveLock() bool {
     return kvp.Session == self.session.ID
 }
 
-func (self *SrvUpdater) acquireLock() bool {
+func (self *LockWrapper) acquireLock() bool {
     kvp := &consulapi.KVPair{
         Key: self.keyPath,
         Session: self.session.ID,
@@ -150,18 +148,4 @@ func (self *SrvUpdater) acquireLock() bool {
     }
     
     return acquired
-}
-
-func (self *SrvUpdater) Update() error {
-    if ! self.loadSession() || ! self.isSessionValid() {
-        self.createSession()
-    }
-
-    if self.acquireLock() || self.haveLock() {
-        log.Print("can do some stuff")
-    } else {
-        log.Print("unable to lock key")
-    }
-    
-    return nil
 }

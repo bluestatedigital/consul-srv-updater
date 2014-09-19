@@ -23,8 +23,16 @@ func main() {
     if err != nil {
         panic(err)
     }
+        
+    wrapper := NewLockWrapper(client, opts.DataDir)
     
-    updater := NewSrvUpdater(client, opts.DataDir)
-    
-    updater.Update()
+    if ! wrapper.loadSession() || ! wrapper.isSessionValid() {
+        wrapper.createSession()
+    }
+
+    if wrapper.acquireLock() || wrapper.haveLock() {
+        log.Print("can do some stuff")
+    } else {
+        log.Print("unable to lock key")
+    }
 }
