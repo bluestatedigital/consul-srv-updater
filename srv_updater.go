@@ -1,7 +1,7 @@
 package main
 
 import (
-    "log"
+    log "github.com/Sirupsen/logrus"
     "fmt"
     
     Route53 "github.com/mitchellh/goamz/route53"
@@ -37,6 +37,8 @@ func NewSrvUpdater(auth AWS.Auth, zoneId string) *SrvUpdater {
 }
 
 func (self *SrvUpdater) UpdateRecord(rec *SrvRecord) error {
+    log.Infof("updating %s SRV record with %d targets", rec.Name, len(rec.Targets))
+    
     crrsReq := &Route53.ChangeResourceRecordSetsRequest{
         Changes: make([]Route53.Change, 1),
     }
@@ -67,7 +69,7 @@ func (self *SrvUpdater) UpdateRecord(rec *SrvRecord) error {
         log.Fatal("unable to update record: ", err)
     }
     
-    log.Println("change status: ", resp.ChangeInfo.Status)
+    log.Infof("change status: %s", resp.ChangeInfo.Status)
     
     return err
 }

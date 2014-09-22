@@ -2,7 +2,7 @@ package main
 
 import (
     "os"
-    "log"
+    log "github.com/Sirupsen/logrus"
 
     "github.com/armon/consul-api"
     flags "github.com/jessevdk/go-flags"
@@ -15,6 +15,12 @@ type Options struct {
     ZoneId  string `short:"z" long:"zone"     required:"true" description:"route53 zone id"`
     Name    string `short:"n" long:"name"     required:"true" description:"SRV record name"`
     TTL     int    `short:"t" long:"ttl"      required:"true" description:"TTL"`
+    Debug   bool   `          long:"debug"                    description:"enable debug logging"`
+}
+
+func init() {
+    // Log as JSON instead of the default ASCII formatter.
+    // log.SetFormatter(&log.JSONFormatter{})
 }
 
 func main() {
@@ -24,17 +30,22 @@ func main() {
     if err != nil {
         os.Exit(1)
     }
-
+    
+    if opts.Debug {
+        // Only log the warning severity or above.
+        log.SetLevel(log.DebugLevel)
+    }
+    
     consul, err := consulapi.NewClient(consulapi.DefaultConfig())
     
     if err != nil {
-        panic(err)
+        log.Fatal("unable to create consul client: ", err)
     }
     
     awsAuth, err := aws.EnvAuth()
 
     if err != nil {
-        panic(err)
+        log.Fatal("unable to load AWS auth from environment: ", err)
     }
     
     wrapper := NewLockWrapper(consul, opts.DataDir)
@@ -45,13 +56,13 @@ func main() {
     }
 
     if wrapper.acquireLock() || wrapper.haveLock() {
-        log.Print("can do some stuff")
+        log.Debug("have lock")
         
         // retrieve the list of consul servers
         services, _, err := consul.Catalog().Service("consul", "", nil)
         
         if err != nil {
-            panic(err)
+            log.Fatal("unable to retrieve 'consul' service: ", err)
         }
         
         srvRecord := SrvRecord{
@@ -83,6 +94,6 @@ func main() {
             log.Fatal("unable to update record: ", err)
         }
     } else {
-        log.Print("unable to lock key")
+        log.Warn("unable to create consul client: ", err)
     }
 }

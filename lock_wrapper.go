@@ -3,7 +3,7 @@ package main
 import (
     "os"
     "fmt"
-    "log"
+    log "github.com/Sirupsen/logrus"
     "path/filepath"
     "encoding/json"
     "github.com/armon/consul-api"
@@ -21,7 +21,7 @@ func NewLockWrapper(consul *consulapi.Client, dataDir string) (*LockWrapper) {
     agentInfo, err := consul.Agent().Self()
     
     if err != nil {
-        log.Fatal("can't get agent info ", err)
+        log.Fatal("can't get agent info: ", err)
     }
 
     updater := &LockWrapper{
@@ -35,6 +35,8 @@ func NewLockWrapper(consul *consulapi.Client, dataDir string) (*LockWrapper) {
 
 // creates a new session
 func (self *LockWrapper) createSession() {
+    log.Info("creating session")
+    
     sessionId, _, err := self.consul.Session().Create(
         &consulapi.SessionEntry{
             Name: "consul-srv-updater",
@@ -63,18 +65,22 @@ func (self *LockWrapper) createSession() {
 
 // destroys an existing session, and also removes the session file
 func (self *LockWrapper) destroySession() {
+    log.Info("destroying session")
+
     self.consul.Session().Destroy(self.session.ID, nil)
     
     err := os.Remove(self.sessionPath)
     
     if err != nil {
         // not fatal.  just unfortunate
-        log.Print("unable to remove ", self.sessionPath, err)
+        log.Warn("unable to remove ", self.sessionPath, err)
     }
 }
 
 // stores session to file, returning an error if unable
 func (self *LockWrapper) storeSession() error {
+    log.Debug("storing session")
+    
     ofp, err := os.OpenFile(self.sessionPath, os.O_WRONLY | os.O_TRUNC | os.O_CREATE, 0600)
     
     if err != nil {
@@ -91,6 +97,8 @@ func (self *LockWrapper) storeSession() error {
 // loads the session from the file, if it exists
 func (self *LockWrapper) loadSession() bool {
     if _, err := os.Stat(self.sessionPath); err == nil {
+        log.Debugf("loading session from %s", self.sessionPath)
+        
         // file exists; deserialize
         ifp, err := os.Open(self.sessionPath)
         
@@ -106,8 +114,14 @@ func (self *LockWrapper) loadSession() bool {
         err = decoder.Decode(&self.session)
         
         if err != nil {
-            log.Print("unable to decode", err)
+            log.Warnf("unable to decode %s: ", self.sessionPath, err)
+        } else {
+            log.WithFields(log.Fields{
+                "session": self.session.ID,
+            }).Debug("loaded session")
         }
+    } else {
+        log.Warnf("no session file at %s", self.sessionPath)
     }
     
     return self.session.ID != ""
@@ -115,6 +129,10 @@ func (self *LockWrapper) loadSession() bool {
 
 // tests that the session is valid
 func (self *LockWrapper) isSessionValid() bool {
+    log.WithFields(log.Fields{
+        "session": self.session.ID,
+    }).Debug("validating session")
+    
     // validate session; returns nil if session is invalid
     session, _, err := self.consul.Session().Info(self.session.ID, nil)
 
@@ -122,10 +140,21 @@ func (self *LockWrapper) isSessionValid() bool {
         log.Fatal("unable to retrieve session: ", err)
     }
     
-    return session != nil
+    isValid := session != nil
+    
+    log.WithFields(log.Fields{
+        "session": self.session.ID,
+    }).Debugf("session is valid? %t", isValid)
+    
+    return isValid
 }
 
 func (self *LockWrapper) haveLock() bool {
+    log.WithFields(log.Fields{
+        "key": self.keyPath,
+        "session": self.session.ID,
+    }).Debug("checking for lock")
+    
     kvp, _, err := self.consul.KV().Get(self.keyPath, nil)
     
     if err != nil {
@@ -136,6 +165,11 @@ func (self *LockWrapper) haveLock() bool {
 }
 
 func (self *LockWrapper) acquireLock() bool {
+    log.WithFields(log.Fields{
+        "key": self.keyPath,
+        "session": self.session.ID,
+    }).Debug("acquiring lock")
+
     kvp := &consulapi.KVPair{
         Key: self.keyPath,
         Session: self.session.ID,
@@ -144,8 +178,13 @@ func (self *LockWrapper) acquireLock() bool {
     acquired, _, err := self.consul.KV().Acquire(kvp, nil)
     
     if err != nil {
-        log.Fatal("unable to acquire lock ", err)
+        log.Fatal("error acquiring lock ", err)
     }
-    
+
+    log.WithFields(log.Fields{
+        "key": self.keyPath,
+        "session": self.session.ID,
+    }).Debugf("acquired lock? %t", acquired)
+
     return acquired
 }
