@@ -1,2 +1,6 @@
-github.com/armon/consul-api  045662de1042be0662fe4a1e21b57c8f7669261a
-github.com/jessevdk/go-flags 1f8fc78104c465b25629ed0fa9bbd4dffb39dd8e
+github.com/armon/consul-api        045662de1042be0662fe4a1e21b57c8f7669261a
+github.com/jessevdk/go-flags       1f8fc78104c465b25629ed0fa9bbd4dffb39dd8e
+
+## hm…
+github.com/mitchellh/goamz/route53 e9d94bdf4402a4136a2182838bee6dba0d7471ef
+github.com/mitchellh/goamz/aws     e9d94bdf4402a4136a2182838bee6dba0d7471ef
