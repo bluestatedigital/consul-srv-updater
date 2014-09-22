@@ -16,11 +16,7 @@ type Options struct {
     Name    string `short:"n" long:"name"     required:"true" description:"SRV record name"`
     TTL     int    `short:"t" long:"ttl"      required:"true" description:"TTL"`
     Debug   bool   `          long:"debug"                    description:"enable debug logging"`
-}
-
-func init() {
-    // Log as JSON instead of the default ASCII formatter.
-    // log.SetFormatter(&log.JSONFormatter{})
+    LogFile string `short:"l" long:"log-file"                 description:"JSON log file path"`
 }
 
 func main() {
@@ -34,6 +30,21 @@ func main() {
     if opts.Debug {
         // Only log the warning severity or above.
         log.SetLevel(log.DebugLevel)
+    }
+    
+    if opts.LogFile != "" {
+        // this fd will leak; we're not going to close it
+        logFp, err := os.OpenFile(opts.LogFile, os.O_WRONLY | os.O_APPEND | os.O_CREATE, 0600)
+        
+        if err != nil {
+            log.Fatalf("error opening %s: %v", opts.LogFile, err)
+        }
+
+        // log as JSON
+        log.SetFormatter(&log.JSONFormatter{})
+        
+        // send output to file
+        log.SetOutput(logFp)
     }
     
     consul, err := consulapi.NewClient(consulapi.DefaultConfig())
