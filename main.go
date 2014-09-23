@@ -59,7 +59,7 @@ func main() {
         log.Fatalf("unable to load AWS auth from environment: %v", err)
     }
     
-    wrapper := NewLockWrapper(consul, opts.DataDir)
+    wrapper := NewLockWrapper(consul, opts.DataDir, "srv_recorder/" + opts.Name)
     updater := NewSrvUpdater(awsAuth, opts.ZoneId)
     
     if ! wrapper.loadSession() || ! wrapper.isSessionValid() {

@@ -2,7 +2,6 @@ package main
 
 import (
     "os"
-    "fmt"
     log "github.com/Sirupsen/logrus"
     "path/filepath"
     "encoding/json"
@@ -17,17 +16,11 @@ type LockWrapper struct {
     keyPath     string
 }
 
-func NewLockWrapper(consul *consulapi.Client, dataDir string) (*LockWrapper) {
-    agentInfo, err := consul.Agent().Self()
-    
-    if err != nil {
-        log.Fatal("can't get agent info: ", err)
-    }
-
+func NewLockWrapper(consul *consulapi.Client, dataDir string, keyPath string) (*LockWrapper) {
     updater := &LockWrapper{
         consul:      consul,
         sessionPath: filepath.Join(dataDir, "session.json"),
-        keyPath:     fmt.Sprintf("consul.io/srv_recorder/%s/leader", agentInfo["Config"]["Datacenter"]),
+        keyPath:     keyPath,
     }
     
     return updater
