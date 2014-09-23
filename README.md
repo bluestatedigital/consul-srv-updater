@@ -45,14 +45,19 @@ about CNAMEs, not sure how it'd feel about IP addresses.  My environment uses
 resolvable FQDNs for Consul node names so that's what I'm going with.  This tool
 may not be general-purpose enough for some (most? any?) people.
 
+## building
+
+You need Go.  The included `Makefile` will create `stage/consul-srv-updater` for
+you.
+
 ## future features
 
 * health check to ensure the session JSON file exists, to prevent lost sessions
 
 ## references
 
-http://en.wikipedia.org/wiki/SRV_record
-https://github.com/hashicorp/consul/issues/110
+* http://en.wikipedia.org/wiki/SRV_record
+* https://github.com/hashicorp/consul/issues/110
 
 [SRV]: http://en.wikipedia.org/wiki/SRV_record
 [leader-elec]: http://www.consul.io/docs/guides/leader-election.html
