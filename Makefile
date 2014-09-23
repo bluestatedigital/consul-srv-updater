@@ -6,7 +6,7 @@ GVP=$(BIN)/gvp
 
 SOURCES=$(shell go list -f '{{range .GoFiles}}{{.}} {{end}}' ./... )
 
-.PHONY: all init build tools clean
+.PHONY: all build tools clean
 
 all: build
 
@@ -31,11 +31,9 @@ tools: $(GPM) $(GVP)
 	$(GVP) in $(GPM) install
 	touch $@
 
-init: .godeps/.gpm_installed stage
-
 build: stage/$(NAME)
 
-stage/$(NAME): init $(SOURCES)
+stage/$(NAME): .godeps/.gpm_installed stage $(SOURCES)
 	$(GVP) in go build -v -o $@ ./...
 
 clean:
