@@ -66,10 +66,10 @@ func (self *SrvUpdater) UpdateRecord(rec *SrvRecord) error {
     resp, err := self.route53.ChangeResourceRecordSets(self.zoneId, crrsReq)
     
     if err != nil {
-        log.Fatalf("unable to update record: %v", err)
+        log.Debugf("unable to update record: %v", err)
+    } else {
+        log.Debugf("change status: %s", resp.ChangeInfo.Status)
     }
-    
-    log.Infof("change status: %s", resp.ChangeInfo.Status)
     
     return err
 }
