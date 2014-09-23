@@ -45,13 +45,13 @@ func (self *LockWrapper) createSession() {
     )
     
     if err != nil {
-        log.Fatal("unable to create session: ", err)
+        log.Fatalf("unable to create session: %v", err)
     }
     
     session, _, err := self.consul.Session().Info(sessionId, nil)
 
     if err != nil {
-        log.Fatal("unable to retrieve session: ", err)
+        log.Fatalf("unable to retrieve session: %v", err)
     }
     
     self.session = *session
@@ -73,7 +73,7 @@ func (self *LockWrapper) destroySession() {
     
     if err != nil {
         // not fatal.  just unfortunate
-        log.Warn("unable to remove ", self.sessionPath, err)
+        log.Warnf("unable to remove %s: %v", self.sessionPath, err)
     }
 }
 
@@ -103,7 +103,7 @@ func (self *LockWrapper) loadSession() bool {
         ifp, err := os.Open(self.sessionPath)
         
         if err != nil {
-            log.Fatal("unable to open", self.sessionPath, err)
+            log.Fatalf("unable to open %s: %v", self.sessionPath, err)
         }
         
         // ensure we close the file
@@ -114,7 +114,7 @@ func (self *LockWrapper) loadSession() bool {
         err = decoder.Decode(&self.session)
         
         if err != nil {
-            log.Warnf("unable to decode %s: ", self.sessionPath, err)
+            log.Warnf("unable to decode %s: %v", self.sessionPath, err)
         } else {
             log.WithFields(log.Fields{
                 "session": self.session.ID,
@@ -137,7 +137,7 @@ func (self *LockWrapper) isSessionValid() bool {
     session, _, err := self.consul.Session().Info(self.session.ID, nil)
 
     if err != nil {
-        log.Fatal("unable to retrieve session: ", err)
+        log.Fatalf("unable to retrieve session: %v", err)
     }
     
     isValid := session != nil
@@ -158,7 +158,7 @@ func (self *LockWrapper) haveLock() bool {
     kvp, _, err := self.consul.KV().Get(self.keyPath, nil)
     
     if err != nil {
-        log.Fatal("unable to get key ", self.keyPath, err)
+        log.Fatalf("unable to get key %s: %v", self.keyPath, err)
     }
 
     return kvp.Session == self.session.ID
@@ -178,7 +178,7 @@ func (self *LockWrapper) acquireLock() bool {
     acquired, _, err := self.consul.KV().Acquire(kvp, nil)
     
     if err != nil {
-        log.Fatal("error acquiring lock ", err)
+        log.Fatalf("error acquiring lock: %v", err)
     }
 
     log.WithFields(log.Fields{

@@ -50,13 +50,13 @@ func main() {
     consul, err := consulapi.NewClient(consulapi.DefaultConfig())
     
     if err != nil {
-        log.Fatal("unable to create consul client: ", err)
+        log.Fatalf("unable to create consul client: %v", err)
     }
     
     awsAuth, err := aws.EnvAuth()
 
     if err != nil {
-        log.Fatal("unable to load AWS auth from environment: ", err)
+        log.Fatalf("unable to load AWS auth from environment: %v", err)
     }
     
     wrapper := NewLockWrapper(consul, opts.DataDir)
@@ -73,7 +73,7 @@ func main() {
         services, _, err := consul.Catalog().Service("consul", "", nil)
         
         if err != nil {
-            log.Fatal("unable to retrieve 'consul' service: ", err)
+            log.Fatalf("unable to retrieve 'consul' service: %v", err)
         }
         
         srvRecord := SrvRecord{
@@ -102,9 +102,9 @@ func main() {
         err = updater.UpdateRecord(&srvRecord)
         
         if err != nil {
-            log.Fatal("unable to update record: ", err)
+            log.Fatalf("unable to update record: %v", err)
         }
     } else {
-        log.Warn("unable to create consul client: ", err)
+        log.Info("unable to acquire lock")
     }
 }
