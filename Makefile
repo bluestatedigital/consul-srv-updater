@@ -6,12 +6,12 @@ GVP=$(BIN)/gvp
 
 SOURCES=$(shell go list -f '{{range .GoFiles}}{{.}} {{end}}' ./... )
 
-.PHONY: all init build tools release clean
+.PHONY: all init build tools clean
 
 all: build
 
-$(BIN):
-	mkdir -p $(BIN)
+$(BIN) stage:
+	mkdir -p $@
 
 $(GPM): $(BIN)
 	curl -s -L -o $@ https://github.com/pote/gpm/raw/v1.2.3/bin/gpm
@@ -23,12 +23,15 @@ $(GVP): $(BIN)
 
 tools: $(GPM) $(GVP)
 
-.godeps/src: tools
+.godeps: $(GVP)
 	$(GVP) init
-	$(GVP) in $(GPM) install
 
-init: .godeps/src
-	mkdir -p stage
+## can't use "tools" as a target because it's not a real file
+.godeps/.gpm_installed: .godeps $(GPM) $(GVP) Godeps
+	$(GVP) in $(GPM) install
+	touch $@
+
+init: .godeps/.gpm_installed stage
 
 build: stage/$(NAME)
 
@@ -36,4 +39,4 @@ stage/$(NAME): init $(SOURCES)
 	$(GVP) in go build -v -o $@ ./...
 
 clean:
-	rm -rf stage release .godeps
+	rm -rf stage .godeps
