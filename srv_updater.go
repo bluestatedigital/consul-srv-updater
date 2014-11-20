@@ -59,7 +59,7 @@ func (self *SrvUpdater) UpdateRecord(rec *SrvRecord) error {
             target.Priority,
             target.Weight,
             target.Port,
-            Route53.FQDN(target.Target),
+            target.Target,
         )
     }
     

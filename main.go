@@ -95,7 +95,7 @@ func main() {
                 Priority: 10,
                 Weight:   10,
                 Port:     8301, // see above
-                Target:   value.Node,
+                Target:   value.Address,
             }
         }
         
