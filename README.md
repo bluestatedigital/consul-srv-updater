@@ -35,15 +35,16 @@ on all of my Consul servers via cron.
 
 aka "opinions"
 
-* Consul server node names must be resolvable DNS names
 * The servers' `serf_lan` port must be 8301; the port shown in the registered
   `consul` service is the server port, but that's not what agents use to join the
   cluster.  Since the `serf_lan` port is not discoverable, it's hard-coded here.
 
-Per the spec, SRV targets must be A or AAAA records.  Route53 doesn't bitch
-about CNAMEs, not sure how it'd feel about IP addresses.  My environment uses
-resolvable FQDNs for Consul node names so that's what I'm going with.  This tool
-may not be general-purpose enough for some (most? any?) people.
+Per the spec, SRV targets must be domain names.  We use private IPs here to cope
+with environments where you can't use a single DNS record to resolve a public IP
+or private IP, depending on the lookup context - a la DNS in EC2.  You'll have to
+deal with this in your tooling by watching out for trailing periods on A/AAAA
+records.  We may or may not provide a flag in the future to toggle between the node
+(FQDN) and address (listening IP).
 
 ## building
 
